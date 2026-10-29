@@ -53,3 +53,6 @@ app.*.map.json
 !.env.example
 *.pem
 *.key
+
+# Local build-time config — real values never committed.
+/dart_define.json

@@ -23,14 +23,14 @@ hidden with CSS, absent from the payload.
 ## Running it
 
 ```bash
+cp dart_define.example.json dart_define.json   # then fill in your project
 flutter pub get
-flutter run -d chrome \
-  --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=<publishable key>
+flutter run -d chrome --dart-define-from-file=dart_define.json
 ```
 
-The publishable key is safe in a browser bundle — it is what a browser gets
-anyway. The secret/service key must never be passed here.
+`dart_define.json` is gitignored — it holds the project address and the
+**publishable** key, which is safe in a browser bundle because that is what a
+browser gets anyway. The secret/service key must never go in it.
 
 ## Backend
 

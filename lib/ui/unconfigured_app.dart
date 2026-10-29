@@ -29,14 +29,13 @@ class UnconfiguredApp extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Run with the project values injected:',
+              'Copy dart_define.example.json to dart_define.json, fill it in, '
+              'then run:',
               style: AppType.sans(size: 14, color: Palette.muted),
             ),
             const SizedBox(height: 12),
-            Text(
-              'flutter run -d chrome \\\n'
-              '  --dart-define=SUPABASE_URL=… \\\n'
-              '  --dart-define=SUPABASE_ANON_KEY=…',
+            SelectableText(
+              'flutter run -d chrome --dart-define-from-file=dart_define.json',
               style: AppType.mono(size: 12, color: Palette.ink),
             ),
           ],

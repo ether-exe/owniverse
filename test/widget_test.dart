@@ -10,7 +10,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('NOT CONFIGURED'), findsOneWidget);
-      expect(find.textContaining('--dart-define=SUPABASE_URL'), findsOneWidget);
+      expect(
+        find.textContaining('--dart-define-from-file=dart_define.json'),
+        findsOneWidget,
+      );
     },
   );
 

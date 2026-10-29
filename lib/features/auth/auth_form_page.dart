@@ -117,9 +117,9 @@ class _AuthFormPageState extends ConsumerState<AuthFormPage> {
             ),
             if (_error != null) QuietError(_error!),
             const SizedBox(height: 28),
-            Row(
-              children: [
-                TextButton(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final submit = TextButton(
                   onPressed: _busy ? null : _submit,
                   child: Text(
                     _busy
@@ -127,9 +127,8 @@ class _AuthFormPageState extends ConsumerState<AuthFormPage> {
                         : (_isSignUp ? 'Create account →' : 'Log in →'),
                     style: AppType.sans(size: 15, color: Palette.ink),
                   ),
-                ),
-                const Spacer(),
-                TextButton(
+                );
+                final swap = TextButton(
                   onPressed: _busy
                       ? null
                       : () => context.go(_isSignUp ? '/login' : '/signup'),
@@ -137,8 +136,17 @@ class _AuthFormPageState extends ConsumerState<AuthFormPage> {
                     _isSignUp ? 'I have an account' : 'I need an account',
                     style: AppType.mono(size: 11),
                   ),
-                ),
-              ],
+                );
+
+                // Two labels cannot share a phone width; they stack instead.
+                if (constraints.maxWidth < 420) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [submit, swap],
+                  );
+                }
+                return Row(children: [submit, const Spacer(), swap]);
+              },
             ),
           ],
         ),

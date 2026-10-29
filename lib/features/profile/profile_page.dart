@@ -99,16 +99,17 @@ class _ProfileView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(handle, style: AppType.mono(size: 13)),
-              if (link != null) ...[
-                const SizedBox(width: 16),
+              if (link != null)
                 Text(
                   '${link!.key} ↗',
                   style: AppType.mono(size: 12, color: Palette.ink),
                 ),
-              ],
             ],
           ),
           const SizedBox(height: 28),

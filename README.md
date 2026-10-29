@@ -1,17 +1,62 @@
-# owniverse
+# Owniverse
 
-A new Flutter project.
+Write a page. Decide what a stranger reads.
 
-## Getting Started
+Owniverse is a Flutter web app with a Notion-style block canvas and one idea a
+block editor does not normally have: **a door**. Everything after it needs an
+identity, and the gated part is never sent to a reader who has not entered — not
+hidden with CSS, absent from the payload.
 
-This project is a starting point for a Flutter application.
+> Status: early. The database exists and is tested; the interface is being built.
 
-A few resources to get you started if this is your first Flutter project:
+## How it works
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- A **Space** is one page, written from blocks.
+- Publishing freezes a snapshot at `@username/slug`. Later edits stay drafts
+  until you publish again, so a live URL never changes under a reader.
+- The `door` block splits the document. Publishing writes three snapshots — the
+  full document for the owner, the public slice, and the gated slice — and the
+  public one is the only thing an anonymous client can be served.
+- Readers and likes only exist past a door, because a counter without an
+  identity counts page loads, not people.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Running it
+
+```bash
+flutter pub get
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=<publishable key>
+```
+
+The publishable key is safe in a browser bundle — it is what a browser gets
+anyway. The secret/service key must never be passed here.
+
+## Backend
+
+Schema, row level security, functions and storage policies live in
+`supabase/migrations/`, applied with the [Supabase CLI](https://supabase.com/docs/guides/cli):
+
+```bash
+npx supabase link --project-ref <ref>
+npx supabase db push
+```
+
+The security suite runs against the linked project and asserts what an attacker
+actually receives:
+
+```bash
+SUPABASE_URL=… SUPABASE_PUBLISHABLE_KEY=… \
+SUPABASE_ACCESS_TOKEN=… SUPABASE_PROJECT_REF=… \
+node scripts/db-test.mjs
+```
+
+It creates its own users and deletes them afterwards.
+
+## Checks
+
+```bash
+flutter analyze
+flutter test
+flutter build web --release
+```

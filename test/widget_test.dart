@@ -1,30 +1,30 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:owniverse/main.dart';
+import 'package:owniverse/ui/unconfigured_app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets(
+    'an unconfigured build says so instead of showing a blank screen',
+    (tester) async {
+      await tester.pumpWidget(const UnconfiguredApp());
+      await tester.pump();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      expect(find.text('NOT CONFIGURED'), findsOneWidget);
+      expect(find.textContaining('--dart-define=SUPABASE_URL'), findsOneWidget);
+    },
+  );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('the unconfigured screen keeps the canvas, not Material grey', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const UnconfiguredApp());
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+    final theme = Theme.of(tester.element(find.byType(Scaffold)));
+    expect(
+      scaffold.backgroundColor ?? theme.scaffoldBackgroundColor,
+      const Color(0xFF0C0C0D),
+    );
   });
 }

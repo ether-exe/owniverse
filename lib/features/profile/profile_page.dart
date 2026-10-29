@@ -84,7 +84,20 @@ class _ProfileView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name.isEmpty ? handle : name, style: AppType.serif(size: 38)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  name.isEmpty ? handle : name,
+                  style: AppType.serif(size: 38),
+                ),
+              ),
+              // D15: the account menu lives on the profile card, nowhere else.
+              if (owner)
+                _AccountMenu(initial: _initial(name.isEmpty ? handle : name)),
+            ],
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -172,6 +185,52 @@ class _Missing extends StatelessWidget {
           const SizedBox(height: 16),
           Text('No profile at that address.', style: AppType.serif(size: 26)),
         ],
+      ),
+    );
+  }
+}
+
+String _initial(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return '·';
+  return trimmed.substring(0, 1).toUpperCase();
+}
+
+/// D15: sign-out lives in the account menu on the profile card — not in a
+/// settings screen, not in a sidebar. There is nowhere else for it to be.
+class _AccountMenu extends ConsumerWidget {
+  const _AccountMenu({required this.initial});
+
+  final String initial;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      tooltip: 'Account',
+      offset: const Offset(0, 44),
+      color: Palette.canvas,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(
+        side: BorderSide(color: Palette.hairline),
+      ),
+      onSelected: (value) {
+        if (value == 'signout') signOut();
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'signout',
+          child: Text('Sign out', style: AppType.sans(size: 14)),
+        ),
+      ],
+      child: Container(
+        width: 34,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Palette.hairline),
+        ),
+        child: Text(initial, style: AppType.mono(size: 13, color: Palette.ink)),
       ),
     );
   }

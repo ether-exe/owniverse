@@ -23,14 +23,23 @@ hidden with CSS, absent from the payload.
 ## Running it
 
 ```bash
-cp dart_define.example.json dart_define.json   # then fill in your project
 flutter pub get
+flutter run -d chrome
+```
+
+That is the whole command. The project URL and the **publishable** key are
+committed in `lib/core/config.dart`, because a publishable key is built to ship
+in a browser bundle — every deployed instance contains it. Row level security,
+not a hidden key, is what protects the data.
+
+To point a fork somewhere else, override both at build time:
+
+```bash
 flutter run -d chrome --dart-define-from-file=dart_define.json
 ```
 
-`dart_define.json` is gitignored — it holds the project address and the
-**publishable** key, which is safe in a browser bundle because that is what a
-browser gets anyway. The secret/service key must never go in it.
+`dart_define.example.json` shows the shape. The secret/service key must never
+appear in either place.
 
 ## Backend
 

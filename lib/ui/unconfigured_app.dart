@@ -29,8 +29,9 @@ class UnconfiguredApp extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Copy dart_define.example.json to dart_define.json, fill it in, '
-              'then run:',
+              'This build was compiled with SUPABASE_URL and SUPABASE_ANON_KEY '
+              'both empty. Either restore the defaults in lib/core/config.dart, '
+              'or pass a file:',
               style: AppType.sans(size: 14, color: Palette.muted),
             ),
             const SizedBox(height: 12),

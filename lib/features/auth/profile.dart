@@ -26,7 +26,7 @@ class Profile {
     return (n == null || n.isEmpty) ? (username ?? '') : n;
   }
 
-  /// A single link, if any — the profile card shows one at a time in v0.0.1.
+  /// A single link, if any — the profile card shows one at a time in v0.1.
   MapEntry<String, String>? get firstSocial {
     for (final entry in social.entries) {
       final value = entry.value;

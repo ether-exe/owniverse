@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 /**
- * Owniverse — M0 security suite.
+ * Owniverse — the security suite (M0 through v0.1).
  *
  * Black-box: every assertion goes through the same HTTP surface an attacker
  * uses. No local Postgres required. SPEC §7.1 (matrix), §7.3 (threats) and the
  * registry invariant of §6.3 are proven here as observed behaviour.
  *
- * What this does NOT prove: policy text, or anything below the wire.
+ * 48 assertions. It creates and deletes its own users and its own storage
+ * objects, so it leaves the project as it found it.
+ *
+ * What this does NOT prove: policy text, anything below the wire, or that the
+ * Flutter client calls any of it correctly.
  *
  * Required environment:
  *   SUPABASE_URL                 https://<ref>.supabase.co
@@ -268,6 +272,57 @@ async function run() {
     );
     expectError('an image without alt text is refused', noAlt, 'image_alt_required');
 
+    // --- media: upload and the row ---------------------------------------
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const mediaPath = `${spaceId}/${RUN}-cover.png`;
+
+    const upload = await fetch(`${URL_BASE}/storage/v1/object/media/${mediaPath}`, {
+      method: 'POST',
+      headers: {
+        apikey: clientKey,
+        Authorization: `Bearer ${alice.token}`,
+        'Content-Type': 'image/png',
+      },
+      body: new Uint8Array(png),
+    });
+    expect(
+      'an owner can upload into their own Space folder',
+      upload.status === 200,
+      `got ${upload.status}`,
+    );
+
+    const mediaRow = await call('/rest/v1/media', {
+      method: 'POST',
+      key: clientKey,
+      token: alice.token,
+      headers: { Prefer: 'return=representation' },
+      body: [
+        {
+          owner_id: alice.id,
+          space_id: spaceId,
+          path: mediaPath,
+          mime: 'image/png',
+          bytes: png.length,
+        },
+      ],
+    });
+    const mediaId = mediaRow.json?.[0]?.id;
+    expect(
+      'the media row is inserted and answers with its id',
+      mediaRow.status === 201 && Boolean(mediaId),
+      mediaRow.text.slice(0, 200),
+    );
+
+    const unresolved = await rpc('space_media', { p_space_id: spaceId }, { key: clientKey });
+    expect(
+      'media paths are not listed for a Space nobody may read',
+      Array.isArray(unresolved.json) && unresolved.json.length === 0,
+      unresolved.text.slice(0, 200),
+    );
+
     // --- publish and the gate -------------------------------------------
     const beforePublish = await rpc('space_head', { p_handle: nameAlice, p_slug: 'my-journey' }, { key: clientKey });
     expect('an unpublished Space is not public', beforePublish.json?.found === false, beforePublish.text);
@@ -282,6 +337,30 @@ async function run() {
     expect('THE GATE: gated block is absent from the anon payload', !headText.includes('SECRET BELOW THE DOOR'), headText.slice(0, 300));
     expect('the block above the door is present for anon', headText.includes('above the threshold'), headText.slice(0, 300));
     expect('counters start at zero', head.json?.readers === 0 && head.json?.likes === 0, head.text);
+
+    // --- media resolution and the gated bucket ---------------------------
+    // The function exists because a block carries `media_id` and nothing lets a
+    // reader turn it into a path. Proved end to end here, not by reading policy.
+    const resolved = await rpc('space_media', { p_space_id: spaceId }, { key: clientKey });
+    expect(
+      'anon can resolve a published Space media to its path',
+      Array.isArray(resolved.json) && resolved.json.some((m) => m.id === mediaId && m.path === mediaPath),
+      resolved.text.slice(0, 300),
+    );
+
+    const anonBytes = await fetch(`${URL_BASE}/storage/v1/object/media/${mediaPath}`, {
+      headers: { apikey: clientKey },
+    });
+    expect(
+      'D25: anon cannot fetch media from a Space with a door',
+      anonBytes.status >= 400,
+      `expected 4xx, got ${anonBytes.status}`,
+    );
+
+    const ownerBytes = await fetch(`${URL_BASE}/storage/v1/object/media/${mediaPath}`, {
+      headers: { apikey: clientKey, Authorization: `Bearer ${alice.token}` },
+    });
+    expect('the owner can fetch their own media', ownerBytes.status === 200, `got ${ownerBytes.status}`);
 
     // space_enter is not granted to anon at all, so the refusal happens before
     // the function body. The internal `auth_required` guard is the second lock.
@@ -377,6 +456,13 @@ async function run() {
       body: { prefix: '', limit: 10 },
     });
     expect('avatars bucket answers without error', anonAvatar.status < 500, anonAvatar.text.slice(0, 200));
+
+    // Storage objects are not cascaded by deleting the user.
+    await call(`/storage/v1/object/media/${mediaPath}`, {
+      method: 'DELETE',
+      key: clientKey,
+      token: alice.token,
+    }).catch(() => {});
   } finally {
     for (const u of users) {
       await deleteUser(u.id).catch(() => {});

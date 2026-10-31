@@ -7,11 +7,13 @@ block editor does not normally have: **a door**. Everything after it needs an
 identity, and the gated part is never sent to a reader who has not entered — not
 hidden with CSS, absent from the payload.
 
-> Status: early. The database exists and is tested; the interface is being built.
+> Status: **v0.1** — the first working prototype. The database, the app and the
+> security suite are all built; 165 Dart tests and 48 backend assertions pass.
 
 ## How it works
 
-- A **Space** is one page, written from blocks.
+- A **Space** is one page, written from nine block types on a canvas that
+autosaves as you type.
 - Publishing freezes a snapshot at `@username/slug`. Later edits stay drafts
   until you publish again, so a live URL never changes under a reader.
 - The `door` block splits the document. Publishing writes three snapshots — the
@@ -19,6 +21,15 @@ hidden with CSS, absent from the payload.
   public one is the only thing an anonymous client can be served.
 - Readers and likes only exist past a door, because a counter without an
   identity counts page loads, not people.
+
+## What is in it
+
+Sign up, complete a profile (name, username, one link, a picture), and land on
+`@you`. Your profile is the workspace: New Space, rename, publish, Make private,
+Move to Trash, Export JSON, and a Trash page that restores or deletes for good.
+Inside a Space: text, heading, long text, cover, image with required alt text,
+profile card, a door, and the two counters that only work past one. The editor
+holds up at 360 px.
 
 ## Running it
 

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme.dart';
 import '../../ui/canvas.dart';
+import '../media/media.dart';
 import 'auth_providers.dart';
 
 /// Mandatory and unavoidable (SPEC §13 step 3). Until a username exists the
@@ -31,6 +32,11 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   bool _emailPublic = false;
   bool _busy = false;
   String? _error;
+
+  /// DoD 4: a picture. Optional at this step, but uploadable here — the whole
+  /// point of `avatars` being a public bucket is that a face is not a secret.
+  String? _avatarPath;
+  bool _uploadingAvatar = false;
 
   _Availability _availability = _Availability.idle;
   Timer? _debounce;
@@ -62,6 +68,34 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
         () => _availability = free ? _Availability.free : _Availability.taken,
       );
     });
+  }
+
+  /// DoD 4's picture. Uploaded to the public `avatars` bucket first, because
+  /// the profile row must never point at a file that is not there.
+  Future<void> _chooseAvatar() async {
+    final writer = ref.read(mediaWriterProvider);
+    final picked = await writer.pick();
+    if (picked == null || !mounted) return;
+
+    final userId = ref.read(sessionProvider)?.user.id;
+    if (userId == null) return;
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      final path = await uploadAvatar(
+        client: ref.read(supabaseProvider),
+        userId: userId,
+        file: picked,
+      );
+      if (mounted) setState(() => _avatarPath = path);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+        setState(() => _error = 'That picture could not be uploaded.');
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -98,7 +132,7 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
             params: {
               'p_name': name,
               'p_username': username,
-              'p_avatar_path': null,
+              'p_avatar_path': _avatarPath,
               'p_email_public': _emailPublic,
               'p_social': social,
             },
@@ -229,6 +263,37 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
             ],
           ),
           const SizedBox(height: 24),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PICTURE', style: AppType.mono(size: 10, spacing: 1.2)),
+                    const SizedBox(height: 6),
+                    Text(
+                      _uploadingAvatar
+                          ? 'Uploading…'
+                          : (_avatarPath == null
+                                ? 'optional'
+                                : 'chosen'),
+                      style: AppType.mono(size: 11),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: _busy || _uploadingAvatar ? null : _chooseAvatar,
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                child: Text(
+                  _avatarPath == null ? 'Choose a picture' : 'Replace',
+                  style: AppType.sans(size: 13, color: Palette.ink),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
 
           Row(
             children: [
